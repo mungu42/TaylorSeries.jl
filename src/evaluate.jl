@@ -141,11 +141,10 @@ function evaluate!(x::Array{TaylorN{T},1}, δx::Array{Taylor1{T},1},
 end
 
 function evaluate!(x::Array{TaylorN{T},1}, δx::Array{TaylorN{T},1},
-        x0::Array{TaylorN{T},1}) where {T<:NumberNotSeriesN}
+        x0::Array{TaylorN{T},1}; sorting::Bool=true) where {T<:NumberNotSeriesN}
 
-    # @assert length(x) == length(x0)
     @inbounds for i in eachindex(x, x0)
-        x0[i] = evaluate( x[i], δx )
+        x0[i] = _evaluate( x[i], δx, Val(sorting) )
     end
     nothing
 end
@@ -212,29 +211,47 @@ end
 (p::HomogeneousPolynomial)() = evaluate(p)
 
 """
-    evaluate(a, [vals])
+    evaluate(a, [vals]; [sorting::Bool=true])
 
 Evaluate the `TaylorN` polynomial `a` at `vals`.
-If `vals` is ommitted, it's evaluated at zero.
-Note that the syntax `a(vals)` is equivalent to `evaluate(a, vals)`; and `a()`
-is equivalent to `evaluate(a)`.
-"""
-function evaluate(a::TaylorN{T}, vals::NTuple) where {T<:Number}
-    @assert get_numvars() == length(vals)
+If `vals` is ommitted, it's evaluated at zero. The
+keyword parameter `sorting` can be used to avoid
+sorting (in increasing order by `abs2`) the
+terms that will be added.
 
+Note that the syntax `a(vals)` is equivalent to
+`evaluate(a, vals)`; and `a()` is equivalent to
+`evaluate(a)`. No extension exists that incorporates
+`sorting`.
+"""
+evaluate(a::TaylorN{T}, vals::NTuple; sorting::Bool=true) where {T<:Number} =
+    _evaluate(a, vals, Val(sorting))
+
+evaluate(a::TaylorN, vals; sorting::Bool=true) = _evaluate(a, (vals...,), Val(sorting))
+
+evaluate(a::TaylorN, v, vals...; sorting::Bool=true) =
+    _evaluate(a, (v, vals...,), Val(sorting))
+
+function _evaluate(a::TaylorN{T}, vals::NTuple) where {T<:Number}
+    @assert get_numvars() == length(vals)
     R = promote_type(T,typeof(vals[1]))
     a_length = length(a)
     suma = zeros(R, a_length)
     @inbounds for homPol in length(a):-1:1
         suma[homPol] = evaluate(a.coeffs[homPol], vals)
     end
-
-    return sum( sort!(suma, by=abs2) )
+    return suma
 end
 
-evaluate(a::TaylorN, vals) = evaluate(a, (vals...,))
+function _evaluate(a::TaylorN{T}, vals::NTuple, ::Val{true}) where {T<:Number}
+    suma = _evaluate(a, vals)
+    return sum( sort!(suma, by=abs2) )
+end
+function _evaluate(a::TaylorN{T}, vals::NTuple, ::Val{false}) where {T<:Number}
+    suma = _evaluate(a, vals)
+    return sum( suma )
+end
 
-evaluate(a::TaylorN, v, vals...) = evaluate(a, (v, vals...,))
 
 function evaluate(a::TaylorN{T}, vals::NTuple{N,Taylor1{S}}) where
         {T<:Number, S<:NumberNotSeries, N}
