@@ -219,12 +219,10 @@ If `vals` is ommitted, it's evaluated at zero.
 Note that the syntax `a(vals)` is equivalent to `evaluate(a, vals)`; and `a()`
 is equivalent to `evaluate(a)`.
 """
-function evaluate(a::TaylorN{T}, vals::NTuple{N,S}) where
-        {T<:Number,S<:NumberNotSeries, N}
+function evaluate(a::TaylorN{T}, vals::NTuple) where {T<:Number}
+    @assert get_numvars() == length(vals)
 
-    @assert N == get_numvars()
-
-    R = promote_type(T,S)
+    R = promote_type(T,typeof(vals[1]))
     a_length = length(a)
     suma = zeros(R, a_length)
     @inbounds for homPol in length(a):-1:1
