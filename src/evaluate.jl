@@ -112,8 +112,11 @@ evaluate(p::Taylor1{T}, x::Array{S}) where {T<:Number, S<:Number} =
 (p::Taylor1)() = evaluate(p)
 
 #function-like behavior for Vector{Taylor1}
-(p::AbstractArray{Taylor1{T}})(x) where {T<:Number} = evaluate.(p, x)
-(p::AbstractArray{Taylor1{T}})() where {T<:Number} = evaluate.(p)
+# (p::AbstractArray{Taylor1{T}})(x) where {T<:Number} = evaluate.(p, x)
+(p::Array{Taylor1{T}})(x) where {T<:Number} = evaluate.(p, x)
+(p::SubArray{Taylor1{T}})(x) where {T<:Number} = evaluate.(p, x)
+(p::Array{Taylor1{T}})(x) where {T<:Number} = evaluate.(p)
+(p::SubArray{Taylor1{T}})(x) where {T<:Number} = evaluate.(p)
 
 ## Evaluation of multivariable
 function evaluate!(x::Array{TaylorN{T},1}, δx::Array{T,1},
@@ -356,9 +359,17 @@ evaluate(A::AbstractArray{TaylorN{T},2}) where {T<:Number} = evaluate.(A)
 (p::TaylorN)(x, v...) = evaluate(p, (x, v...,))
 
 #function-like behavior for Vector{TaylorN}
-(p::AbstractVector{TaylorN{T}})(x) where {T<:Number} = evaluate(p, x)
-(p::AbstractVector{TaylorN{T}})() where {T<:Number} = evaluate(p)
+(p::Array{TaylorN{T},1})(x) where {T<:Number} = evaluate(p, x)
+(p::SubArray{TaylorN{T},1})(x) where {T<:Number} = evaluate(p, x)
+(p::Array{TaylorN{T},1})() where {T<:Number} = evaluate(p)
+(p::SubArray{TaylorN{T},1})() where {T<:Number} = evaluate(p)
+# (p::AbstractVector{TaylorN{T}})(x) where {T<:Number} = evaluate(p, x)
+# (p::AbstractVector{TaylorN{T}})() where {T<:Number} = evaluate(p)
 
 #function-like behavior for Matrix{TaylorN}
-(p::AbstractArray{TaylorN{T},2})(x) where {T<:Number} = evaluate(p, x)
-(p::AbstractArray{TaylorN{T},2})() where {T<:Number} = evaluate.(p)
+(p::Array{TaylorN{T},2})(x) where {T<:Number} = evaluate(p, x)
+(p::SubArray{TaylorN{T},2})(x) where {T<:Number} = evaluate(p, x)
+(p::Array{TaylorN{T},2})() where {T<:Number} = evaluate.(p)
+(p::SubArray{TaylorN{T},2})() where {T<:Number} = evaluate.(p)
+# (p::AbstractArray{TaylorN{T},2})(x) where {T<:Number} = evaluate(p, x)
+# (p::AbstractArray{TaylorN{T},2})() where {T<:Number} = evaluate.(p)
