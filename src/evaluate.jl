@@ -38,9 +38,9 @@ representing the dependent variables of an ODE, at *time* δt. Note that the
 syntax `x(δt)` is equivalent to `evaluate(x, δt)`, and `x()`
 is equivalent to `evaluate(x)`.
 """
-evaluate(x::Union{Array{Taylor1{T}}, SubArray{Taylor1{T}}}, δt::S) where
+evaluate(x::AbstractArray{T}, δt::S) where
     {T<:Number, S<:Number} = evaluate.(x, δt)
-evaluate(a::Union{Array{Taylor1{T}}, SubArray{Taylor1{T}}}) where {T<:Number} =
+evaluate(a::AbstractArray{T}) where {T<:Number} =
     evaluate.(a, zero(T))
 
 """
@@ -52,18 +52,16 @@ of an ODE at *time* `δt`. It updates the vector `x0` with the
 computed values.
 """
 function evaluate!(x::Array{Taylor1{T},1}, δt::T,
-        x0::Union{Array{T,1},SubArray{T,1}}) where {T<:Number}
+        x0::AbstractVector{T}) where {T<:Number}
 
-    # @assert length(x) == length(x0)
     @inbounds for i in eachindex(x, x0)
         x0[i] = evaluate( x[i], δt )
     end
     nothing
 end
 function evaluate!(x::Array{Taylor1{T},1}, δt::S,
-        x0::Union{Array{T,1},SubArray{T,1}}) where {T<:Number, S<:Number}
+        x0::AbstractVector{T}) where {T<:Number, S<:Number}
 
-    # @assert length(x) == length(x0)
     @inbounds for i in eachindex(x, x0)
         x0[i] = evaluate( x[i], δt )
     end
@@ -114,10 +112,8 @@ evaluate(p::Taylor1{T}, x::Array{S}) where {T<:Number, S<:Number} =
 (p::Taylor1)() = evaluate(p)
 
 #function-like behavior for Vector{Taylor1}
-(p::Array{Taylor1{T}})(x) where {T<:Number} = evaluate.(p, x)
-(p::SubArray{Taylor1{T}})(x) where {T<:Number} = evaluate.(p, x)
-(p::Array{Taylor1{T}})() where {T<:Number} = evaluate.(p)
-(p::SubArray{Taylor1{T}})() where {T<:Number} = evaluate.(p)
+(p::AbstractArray{Taylor1{T}})(x) where {T<:Number} = evaluate.(p, x)
+(p::AbstractArray{Taylor1{T}})() where {T<:Number} = evaluate.(p)
 
 ## Evaluation of multivariable
 function evaluate!(x::Array{TaylorN{T},1}, δx::Array{T,1},
@@ -322,7 +318,7 @@ evaluate(a::TaylorN{T}, x::Pair{Symbol,S}) where {T<:Number, S<:NumberNotSeriesN
 evaluate(a::TaylorN{T}) where {T<:Number} = a[0][1]
 
 #Vector evaluation
-function evaluate(x::Union{Array{TaylorN{T},1},SubArray{TaylorN{T},1}}, δx::Vector{S}) where {T<:Number, S<:Number}
+function evaluate(x::AbstractArray{TaylorN{T},1}, δx::Vector{S}) where {T<:Number, S<:Number}
     R = promote_type(T,S)
     return evaluate(convert(Array{TaylorN{R},1},x), convert(Vector{R},δx))
 end
@@ -333,28 +329,24 @@ function evaluate(x::Array{TaylorN{T},1}, δx::Array{T,1}) where {T<:Number}
     return x0
 end
 
-evaluate(x::Array{TaylorN{T},1}) where {T<:Number} = evaluate.(x)
-evaluate(x::SubArray{TaylorN{T},1}) where {T<:Number} = evaluate.(x)
+evaluate(x::AbstractVector{TaylorN{T}}) where {T<:Number} = evaluate.(x)
+
 
 #Matrix evaluation
-function evaluate(A::Union{Array{TaylorN{T},2}, SubArray{TaylorN{T},2}}, δx::Vector{S}) where {T<:Number, S<:Number}
+# function evaluate(A::Union{Array{TaylorN{T},2}, SubArray{TaylorN{T},2}}, δx::Vector{S}) where {T<:Number, S<:Number}
+function evaluate(A::AbstractArray{TaylorN{T},2}, δx::Vector{S}) where {T<:Number, S<:Number}
     R = promote_type(T,S)
     return evaluate(convert(Array{TaylorN{R},2},A), convert(Vector{R},δx))
 end
-function evaluate(A::Array{TaylorN{T},2}, δx::Vector{T}) where {T<:Number}
-    n,m = size(A)
-    Anew = Array{T}(undef, n, m )
-    xnew = Array{T}(undef, n )
-
-    for i in 1:m
-        evaluate!(A[:,i], δx, xnew)
-        Anew[:,i] = xnew
+function evaluate(A::AbstractArray{TaylorN{T},2}, δx::Vector{T}) where {T<:Number}
+    n, m = size(A)
+    Anew = Array{T}(undef, size(A)... )
+    @inbounds for i in eachindex(A)
+        Anew[i] = evaluate(A[i], δx)
     end
-
     return Anew
 end
-evaluate(A::Array{TaylorN{T},2}) where {T<:Number} = evaluate.(A)
-evaluate(A::SubArray{TaylorN{T},2}) where {T<:Number} = evaluate.(A)
+evaluate(A::AbstractArray{TaylorN{T},2}) where {T<:Number} = evaluate.(A)
 
 #function-like behavior for TaylorN
 (p::TaylorN)(x) = evaluate(p, x)
@@ -364,13 +356,9 @@ evaluate(A::SubArray{TaylorN{T},2}) where {T<:Number} = evaluate.(A)
 (p::TaylorN)(x, v...) = evaluate(p, (x, v...,))
 
 #function-like behavior for Vector{TaylorN}
-(p::Array{TaylorN{T},1})(x) where {T<:Number} = evaluate(p, x)
-(p::SubArray{TaylorN{T},1})(x) where {T<:Number} = evaluate(p, x)
-(p::Array{TaylorN{T},1})() where {T<:Number} = evaluate(p)
-(p::SubArray{TaylorN{T},1})() where {T<:Number} = evaluate(p)
+(p::AbstractVector{TaylorN{T}})(x) where {T<:Number} = evaluate(p, x)
+(p::AbstractVector{TaylorN{T}})() where {T<:Number} = evaluate(p)
 
 #function-like behavior for Matrix{TaylorN}
-(p::Array{TaylorN{T},2})(x) where {T<:Number} = evaluate(p, x)
-(p::SubArray{TaylorN{T},2})(x) where {T<:Number} = evaluate(p, x)
-(p::Array{TaylorN{T},2})() where {T<:Number} = evaluate.(p)
-(p::SubArray{TaylorN{T},2})() where {T<:Number} = evaluate.(p)
+(p::AbstractArray{TaylorN{T},2})(x) where {T<:Number} = evaluate(p, x)
+(p::AbstractArray{TaylorN{T},2})() where {T<:Number} = evaluate.(p)
