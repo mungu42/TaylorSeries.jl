@@ -351,10 +351,15 @@ evaluate(A::AbstractArray{TaylorN{T},2}) where {T<:Number} = evaluate.(A)
 
 #function-like behavior for TaylorN
 (p::TaylorN)(x) = evaluate(p, x)
+(p::TaylorN)(x, sorting::Bool) = evaluate(p, x; sorting=sorting)
+(p::TaylorN{Taylor1{T}})(x) where {T<:NumberNotSeries} = evaluate(p, x)
+(p::TaylorN{T})(x::Array{Taylor1{T}}) where {T<:NumberNotSeries} = evaluate(p, x)
 (p::TaylorN)() = evaluate(p)
 (p::TaylorN)(s::Symbol, x) = evaluate(p, s, x)
 (p::TaylorN)(x::Pair) = evaluate(p, first(x), last(x))
 (p::TaylorN)(x, v...) = evaluate(p, (x, v...,))
+(p::TaylorN)(x, v, sorting::Bool) = evaluate(p, (x, v...,); sorting=sorting)
+(p::TaylorN{Taylor1{T}})(x, v...) where {T<:NumberNotSeries} = evaluate(p, (x, v...,))
 
 #function-like behavior for Vector{TaylorN}
 (p::Array{TaylorN{T},1})(x) where {T<:Number} = evaluate(p, x)
