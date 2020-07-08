@@ -194,7 +194,7 @@ evaluate(a::HomogeneousPolynomial{T}, vals::Array{S,1} ) where
 
 evaluate(a::HomogeneousPolynomial, v, vals...) = evaluate(a, (v, vals...,))
 
-evaluate(a::HomogeneousPolynomial, v) = evaluate(a, v...)
+evaluate(a::HomogeneousPolynomial, v) = evaluate(a, [v...])
 
 function evaluate(a::HomogeneousPolynomial)
     a.order == 0 && return a[1]
